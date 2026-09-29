@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f7fb;
+  --foreground: #1e293b;
+  --superficie: #ffffff;
+  --texto-secundario: #626976;
+  --texto-suave: #64748b;
+  --grade: #f2f3f4;
+  --eixo: #cbd5e1;
+  --borda: #e6e7e9;
+  --trilho: #f1f5f9;
+  --marinho: #1e293b;
+  --marinho-texto: #fafbfc;
+  --marinho-suave: #94a3b8;
+  --destaque: #fec95c;
+  --destaque-texto: #1e293b;
+  --serie-1: #206bc4;
+  --serie-2: #f76707;
+  --status-novo: #49bf4d;
+  --status-planejado: #1b2f62;
+  --status-pendente: #ffa500;
+  --status-encerrado: #1e293b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-superficie: var(--superficie);
+  --color-texto-secundario: var(--texto-secundario);
+  --color-texto-suave: var(--texto-suave);
+  --color-grade: var(--grade);
+  --color-eixo: var(--eixo);
+  --color-borda: var(--borda);
+  --color-trilho: var(--trilho);
+  --color-marinho: var(--marinho);
+  --color-marinho-texto: var(--marinho-texto);
+  --color-marinho-suave: var(--marinho-suave);
+  --color-destaque: var(--destaque);
+  --color-destaque-texto: var(--destaque-texto);
+  --color-serie-1: var(--serie-1);
+  --color-serie-2: var(--serie-2);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1b2434;
+    --foreground: #fafbfc;
+    --superficie: #1e293b;
+    --texto-secundario: #b4bcc9;
+    --texto-suave: #8a94a6;
+    --grade: #253249;
+    --eixo: #2c3c56;
+    --borda: #2c3c56;
+    --trilho: #253249;
+    --marinho: #151d2b;
+    --serie-1: #3d8ae0;
+    --serie-2: #e8650f;
+    --status-planejado: #6b88c9;
+    --status-encerrado: #cbd5e1;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
