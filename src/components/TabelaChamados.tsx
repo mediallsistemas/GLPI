@@ -1,16 +1,6 @@
 import { IconeStatus } from '@/components/IconeStatus';
+import { formatarDataHora } from '@/lib/formatacao';
 import { Chamado } from '@/lib/glpi/tipos';
-
-const formatador = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-
-function formatarData(valor: string | null): string {
-  if (!valor) return '—';
-  const data = new Date(valor.replace(' ', 'T'));
-  return Number.isNaN(data.getTime()) ? valor : formatador.format(data);
-}
 
 const COR_DA_PRIORIDADE: Record<number, string> = {
   1: '#fff2f2',
@@ -65,7 +55,7 @@ export function TabelaChamados({ chamados }: { chamados: Chamado[] }) {
                 </span>
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
-                {formatarData(chamado.atualizadoEm)}
+                {formatarDataHora(chamado.atualizadoEm)}
               </td>
             </tr>
           ))}

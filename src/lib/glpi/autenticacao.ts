@@ -18,12 +18,6 @@ type SessaoCompletaGlpi = {
   };
 };
 
-type PerfisGlpi = {
-  myprofiles?: { id: number; name: string; interface?: string }[];
-};
-
-const INTERFACE_PADRAO = 'central';
-
 function cabecalhos(config: ReturnType<typeof lerConfigGlpi>, sessionToken: string) {
   return { 'App-Token': config.appToken, 'Session-Token': sessionToken };
 }
@@ -77,12 +71,11 @@ export async function autenticarUsuarioGlpi(
   const sessionToken = corpoAbertura.session_token;
 
   try {
-    const [respostaSessao, respostaPerfis] = await Promise.all([
-      fetch(`${config.urlApi}/getFullSession`, { headers: cabecalhos(config, sessionToken), cache: 'no-store' }),
-      fetch(`${config.urlApi}/getMyProfiles`, { headers: cabecalhos(config, sessionToken), cache: 'no-store' }),
-    ]);
+    const respostaSessao = await fetch(`${config.urlApi}/getFullSession`, {
+      headers: cabecalhos(config, sessionToken),
+      cache: 'no-store',
+    });
     const sessao = (await lerJson<SessaoCompletaGlpi>(respostaSessao))?.session;
-    const perfis = (await lerJson<PerfisGlpi>(respostaPerfis))?.myprofiles ?? [];
 
     if (!sessao?.glpiID) {
       throw new ErroGlpi('O GLPI não devolveu os dados do usuário.', {
@@ -91,25 +84,14 @@ export async function autenticarUsuarioGlpi(
       });
     }
 
-    const perfilPadrao = perfis.find((perfil) => perfil.interface === INTERFACE_PADRAO);
-    if (!perfilPadrao) {
-      throw new ErroGlpi('Seu perfil no GLPI não tem acesso a este painel.', {
-        status: 403,
-        codigo: 'PERFIL_SEM_ACESSO',
-      });
-    }
-
-    const login = sessao.glpiname ?? '';
+    const loginGlpi = sessao.glpiname ?? login;
     const nomeCompleto = [sessao.glpifirstname, sessao.glpirealname].filter(Boolean).join(' ').trim();
 
     return {
       id: Number(sessao.glpiID),
-      login,
-      nome: nomeCompleto || login,
-      perfil:
-        sessao.glpiactiveprofile?.interface === INTERFACE_PADRAO
-          ? (sessao.glpiactiveprofile.name ?? perfilPadrao.name)
-          : perfilPadrao.name,
+      login: loginGlpi,
+      nome: nomeCompleto || loginGlpi,
+      perfil: sessao.glpiactiveprofile?.name ?? 'Sem perfil',
     };
   } finally {
     await fetch(`${config.urlApi}/killSession`, {

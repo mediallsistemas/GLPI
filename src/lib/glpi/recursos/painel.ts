@@ -11,6 +11,7 @@ import {
   rotuloStatus,
   STATUS_EM_ABERTO,
 } from '../tipos';
+import { textoLimpo as texto } from '../texto';
 import { obterNomesDeUsuarios } from './usuarios';
 
 const FUSO_HORARIO = 'America/Sao_Paulo';
@@ -18,26 +19,6 @@ const MAXIMO_FATIAS = 8;
 const SEPARADOR_MULTIPLOS = '$$##$$';
 
 export const PERIODOS_PAINEL: PeriodoPainel[] = [7, 30, 90];
-
-const ENTIDADES_HTML: Record<string, string> = {
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&#039;': "'",
-  '&#39;': "'",
-  '&#60;': '<',
-  '&#62;': '>',
-};
-
-function texto(valor: unknown): string | null {
-  if (valor === null || valor === undefined) return null;
-  const limpo = String(valor)
-    .replace(/&(amp|lt|gt|quot|#0?39|#60|#62);/g, (entidade) => ENTIDADES_HTML[entidade])
-    .replace(/<[^>]*>/g, '')
-    .trim();
-  return limpo === '' ? null : limpo;
-}
 
 function numero(valor: unknown): number {
   const convertido = Number(valor);

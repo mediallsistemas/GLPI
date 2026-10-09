@@ -29,20 +29,44 @@ npm run build
 | `GLPI_API_URL` | URL do endpoint REST, terminando em `/apirest.php` |
 | `GLPI_APP_TOKEN` | Token da aplicação — GLPI → Configurar → Geral → API |
 | `GLPI_USER_TOKEN` | Token pessoal do usuário de serviço — Preferências do usuário → API |
+| `SESSAO_SEGREDO` | Assina o cookie de sessão do painel; 32+ caracteres (`openssl rand -base64 48`) |
+| `PAINEL_ADMINISTRADORES` | Logins do GLPI que administram o painel, separados por vírgula |
+| `GLPI_GRUPO_PAINEL` | Nome do grupo do GLPI que guarda quem tem acesso (padrão `Painel de chamados`) |
 
-A API REST precisa estar **habilitada** no GLPI, e o IP de origem liberado na
-configuração do cliente de API. Na Vercel, a saída é um conjunto amplo de IPs — se a
-instância restringir por IP, use IPs dedicados ou um proxy fixo.
+A API REST precisa estar **habilitada** no GLPI, com **"Habilitar login com
+credenciais"** ativo (é assim que o painel valida a senha de quem entra), e o IP de
+origem liberado na configuração do cliente de API. Na Vercel, a saída é um conjunto
+amplo de IPs — se a instância restringir por IP, use IPs dedicados ou um proxy fixo.
 
-As três variáveis são lidas apenas no servidor (sem prefixo `NEXT_PUBLIC_`). Os tokens
+Todas as variáveis são lidas apenas no servidor (sem prefixo `NEXT_PUBLIC_`). Os tokens
 nunca chegam ao navegador: o front conversa com as rotas em `/api/glpi/*`, e só elas
 falam com o GLPI.
 
+## Acesso ao painel
+
+Quem entra usa o próprio usuário e senha do GLPI. Depois da senha validada, o painel
+decide se a pessoa pode entrar:
+
+1. **Administradores** (`PAINEL_ADMINISTRADORES`) sempre entram e veem a tela
+   **Usuários**, que lista todos os usuários do GLPI com um interruptor de acesso.
+2. **Liberados** são os membros do grupo `GLPI_GRUPO_PAINEL` no GLPI. O interruptor da
+   tela Usuários inclui ou remove a pessoa desse grupo. O grupo é criado pela própria
+   integração na primeira liberação, sem permissões de atribuição de chamado.
+3. Quem não é nem um nem outro recebe "ainda não foi liberado" no login.
+
+A liberação é reconferida a cada abertura do painel, então remover alguém encerra a
+sessão dela na próxima visita. Os dados do painel continuam vindo da conta de serviço:
+todo mundo que entra vê o mesmo conteúdo.
+
 ## Endpoints locais
+
+Todas exigem sessão do painel e liberação vigente (`exigirAcesso`): sem sessão
+respondem 401, sem liberação 403.
 
 | Rota | O que faz |
 |---|---|
-| `GET /api/glpi/status` | Testa a conexão e devolve a sessão atual (`getFullSession`) |
+| `GET /api/glpi/status` | Testa a conexão e devolve a sessão da conta de serviço — só administradores |
+| `GET /api/glpi/painel?dias=30` | Indicadores do painel |
 | `GET /api/glpi/chamados?inicio=0&limite=25&ordem=DESC` | Lista chamados |
 | `GET /api/glpi/chamados/:id` | Detalhe de um chamado |
 
@@ -52,15 +76,21 @@ falam com o GLPI.
 src/
   app/
     api/glpi/          rotas que expõem o GLPI ao front
+    login/             formulário e ação de entrar/sair
+    usuarios/          tela de usuários e ação de liberar/revogar acesso
+    sair/              encerra a sessão por GET (usado quando o acesso é removido)
     page.tsx           painel de chamados
+  middleware.ts        exige o cookie de sessão fora de /login
   components/          apresentação
   lib/
+    autenticacao/      cookie assinado, limite de tentativas, níveis de acesso
     glpi/
       config.ts        leitura e validação do ambiente
       sessao.ts        initSession / killSession com cache
       cliente.ts       fetch autenticado, paginação, erros
+      autenticacao.ts  valida usuário e senha de quem entra no painel
       tipos.ts         tipos do GLPI e rótulos em pt-BR
-      recursos/        um arquivo por recurso (chamados, ...)
+      recursos/        um arquivo por recurso (chamados, painel, usuarios, acesso-painel)
     http/              helpers de resposta das rotas
 ```
 
@@ -80,4 +110,5 @@ externo (Redis/Upstash) é o próximo passo.
 - Busca com critérios (`/search/Ticket`) em vez de listagem simples.
 - Correlacionar usuários do GLPI com os do `Autenticacao_DB` (compartilhado com
   gestao-hospitalar e LinenSistem).
-- Autenticação do painel — hoje qualquer um que abra a aplicação vê os chamados.
+- Visão por usuário: consultar o GLPI com a sessão de quem entrou, para valer as
+  restrições de perfil e entidade de cada pessoa.

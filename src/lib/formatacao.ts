@@ -1,3 +1,4 @@
+const dataHora = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 const numeroInteiro = new Intl.NumberFormat('pt-BR');
 const numeroCompacto = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 });
 const percentual = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 0 });
@@ -15,6 +16,12 @@ export function formatarDuracao(horas: number | null): string {
   if (horas < 1) return `${Math.max(1, Math.round(horas * 60))} min`;
   if (horas < 48) return `${numeroInteiro.format(Math.round(horas * 10) / 10)} h`;
   return `${numeroInteiro.format(Math.round((horas / 24) * 10) / 10)} dias`;
+}
+
+export function formatarDataHora(valor: string | null): string {
+  if (!valor) return '—';
+  const data = new Date(valor.replace(' ', 'T'));
+  return Number.isNaN(data.getTime()) ? valor : dataHora.format(data);
 }
 
 export function formatarDiaCurto(dia: string): string {

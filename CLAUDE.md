@@ -39,6 +39,9 @@ Deploy: Vercel.
   `tipos.ts`, com os rótulos em pt-BR. Não espalhe `status === 2` pelo código.
 - Erros da integração são `ErroGlpi`, com `status` e `codigo`; as rotas os convertem em
   resposta HTTP por `respostaDeErro(...)`.
+- **Acesso ao painel vive no GLPI, não no código.** Quem entra é membro do grupo
+  `GLPI_GRUPO_PAINEL` ou está em `PAINEL_ADMINISTRADORES`. Toda regra de acesso passa por
+  `src/lib/autenticacao/acesso.ts`; não espalhe checagens de login pelas páginas.
 
 ## Convenções
 

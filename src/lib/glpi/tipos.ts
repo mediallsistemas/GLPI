@@ -81,6 +81,30 @@ export type UsuarioGlpi = {
   realname: string | null;
   firstname: string | null;
   is_active: number;
+  last_login?: string | null;
+  entities_id?: number | string;
+  profiles_id?: number | string;
+};
+
+export type UsuarioPainel = {
+  id: number;
+  login: string;
+  nome: string;
+  ativo: boolean;
+  entidade: string | null;
+  perfilPadrao: string | null;
+  ultimoAcesso: string | null;
+};
+
+export type GrupoGlpi = {
+  id: number;
+  name: string;
+};
+
+export type VinculoGrupoUsuarioGlpi = {
+  id: number;
+  users_id: number | string;
+  groups_id: number | string;
 };
 
 export type PaginaDeChamados = {

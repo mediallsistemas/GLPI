@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { exigirAcesso } from '@/lib/autenticacao/acesso';
 import { ErroGlpi, obterChamado } from '@/lib/glpi';
 import { respostaDeErro } from '@/lib/http/resposta';
 
@@ -9,6 +10,7 @@ export async function GET(
   contexto: { params: Promise<{ id: string }> },
 ) {
   try {
+    await exigirAcesso();
     const { id } = await contexto.params;
     const identificador = Number(id);
 

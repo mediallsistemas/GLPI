@@ -1,7 +1,9 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AvisoConfiguracao } from '@/components/AvisoConfiguracao';
-import { MenuUsuario } from '@/components/MenuUsuario';
+import { Cabecalho } from '@/components/Cabecalho';
+import { Falha } from '@/components/Falha';
+import { acessoAindaValido, ehAdministrador } from '@/lib/autenticacao/acesso';
 import { COOKIE_SESSAO, verificarSessao } from '@/lib/autenticacao/sessao-usuario';
 import { TabelaChamados } from '@/components/TabelaChamados';
 import { CartaoIndicador } from '@/components/painel/CartaoIndicador';
@@ -45,15 +47,6 @@ async function carregar(periodo: ReturnType<typeof periodoValido>) {
       },
     };
   }
-}
-
-function Falha({ mensagem }: { mensagem: string }) {
-  return (
-    <div className="rounded-xl border border-red-300 bg-red-50 p-6 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
-      <h2 className="text-base font-semibold">Não foi possível consultar o GLPI</h2>
-      <p className="mt-2 text-sm">{mensagem}</p>
-    </div>
-  );
 }
 
 function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamado[] }) {
@@ -129,32 +122,26 @@ export default async function Home({
 }) {
   const usuario = await verificarSessao((await cookies()).get(COOKIE_SESSAO)?.value);
   if (!usuario) redirect('/login');
+  if (!(await acessoAindaValido(usuario))) redirect('/sair?aviso=acesso-removido');
 
   const periodo = periodoValido((await searchParams).dias);
   const { painel, recentes, falha } = await carregar(periodo);
 
   return (
     <>
-      <header className="bg-marinho text-marinho-texto">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div className="flex items-center gap-3">
-            <span aria-hidden className="h-8 w-1 rounded-full bg-destaque" />
-            <div className="flex flex-col">
-              <h1 className="text-xl font-semibold tracking-tight">Chamados GLPI</h1>
-              <p className="text-sm text-marinho-suave">Visão geral do atendimento</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <FiltroPeriodo atual={periodo} opcoes={PERIODOS_PAINEL} />
-            <span aria-hidden className="hidden h-8 w-px bg-white/15 sm:block" />
-            <MenuUsuario usuario={usuario} />
-          </div>
-        </div>
-      </header>
+      <Cabecalho
+        usuario={usuario}
+        administrador={ehAdministrador(usuario.login)}
+        ativo="painel"
+        subtitulo="Visão geral do atendimento"
+        acoes={<FiltroPeriodo atual={periodo} opcoes={PERIODOS_PAINEL} />}
+      />
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
         {falha?.configuracao ? <AvisoConfiguracao mensagem={falha.mensagem} /> : null}
-        {falha && !falha.configuracao ? <Falha mensagem={falha.mensagem} /> : null}
+        {falha && !falha.configuracao ? (
+          <Falha titulo="Não foi possível consultar o GLPI" mensagem={falha.mensagem} />
+        ) : null}
         {painel ? <Painel painel={painel} recentes={recentes} /> : null}
       </main>
     </>

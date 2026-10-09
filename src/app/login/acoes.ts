@@ -2,6 +2,7 @@
 
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { nivelDeAcesso } from '@/lib/autenticacao/acesso';
 import {
   limparFalhas,
   minutosAteLiberar,
@@ -47,6 +48,13 @@ export async function entrar(_anterior: EstadoLogin, dados: FormData): Promise<E
     const usuario = await autenticarUsuarioGlpi(login, senha);
     limparFalhas(chave);
 
+    if ((await nivelDeAcesso(usuario)) === 'sem-acesso') {
+      return {
+        erro: 'Seu usuário ainda não foi liberado para este painel. Peça a liberação a um administrador.',
+        login,
+      };
+    }
+
     (await cookies()).set(COOKIE_SESSAO, await assinarSessao(usuario), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -59,7 +67,7 @@ export async function entrar(_anterior: EstadoLogin, dados: FormData): Promise<E
       registrarFalha(chave);
       return { erro: erro.message, login };
     }
-    if (ehErroGlpi(erro) && ['PERFIL_SEM_ACESSO', 'LOGIN_COM_SENHA_DESATIVADO'].includes(erro.codigo)) {
+    if (ehErroGlpi(erro) && erro.codigo === 'LOGIN_COM_SENHA_DESATIVADO') {
       return { erro: erro.message, login };
     }
     console.error('[login] falha ao autenticar no GLPI', erro);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { exigirAcesso } from '@/lib/autenticacao/acesso';
 import { listarChamados } from '@/lib/glpi';
 import { respostaDeErro } from '@/lib/http/resposta';
 
@@ -12,6 +13,7 @@ function numero(valor: string | null): number | undefined {
 
 export async function GET(requisicao: NextRequest) {
   try {
+    await exigirAcesso();
     const parametros = requisicao.nextUrl.searchParams;
 
     const pagina = await listarChamados({
