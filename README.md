@@ -67,7 +67,7 @@ respondem 401, bloqueado 403.
 | Rota | O que faz |
 |---|---|
 | `GET /api/glpi/status` | Testa a conexão e devolve a sessão da conta de serviço — só administradores |
-| `GET /api/glpi/painel?dias=30` | Indicadores do painel |
+| `GET /api/glpi/painel?dias=30` ou `?de=2026-09-01&ate=2026-09-30` | Indicadores do painel (últimos 7/30/90 dias ou intervalo de até 366 dias) |
 | `GET /api/glpi/chamados?inicio=0&limite=25&ordem=DESC` | Lista chamados |
 | `GET /api/glpi/chamados/:id` | Detalhe de um chamado |
 

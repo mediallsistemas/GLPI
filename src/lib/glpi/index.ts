@@ -17,5 +17,5 @@ export {
   bloquearUsuario,
   desbloquearUsuario,
 } from './recursos/acesso-painel';
-export { montarPainel, periodoValido, PERIODOS_PAINEL } from './recursos/painel';
+export { intervaloDoPainel, montarPainel, periodoValido, PERIODOS_PAINEL } from './recursos/painel';
 export * from './tipos';

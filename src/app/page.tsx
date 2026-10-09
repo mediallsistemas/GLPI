@@ -11,16 +11,16 @@ import { FiltroPeriodo } from '@/components/painel/FiltroPeriodo';
 import { GraficoBarras } from '@/components/painel/GraficoBarras';
 import { GraficoEvolucao } from '@/components/painel/GraficoEvolucao';
 import { SecaoPainel } from '@/components/painel/SecaoPainel';
-import { formatarDiaCurto, formatarDuracao, formatarNumero } from '@/lib/formatacao';
+import { descreverIntervalo, formatarDuracao, formatarNumero } from '@/lib/formatacao';
 import {
   ehErroGlpi,
+  intervaloDoPainel,
   listarChamados,
   mensagemDeErro,
   montarPainel,
   PERIODOS_PAINEL,
-  periodoValido,
 } from '@/lib/glpi';
-import { Chamado, PainelChamados } from '@/lib/glpi/tipos';
+import { Chamado, IntervaloPainel, PainelChamados } from '@/lib/glpi/tipos';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +30,10 @@ const horario = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo',
 });
 
-async function carregar(periodo: ReturnType<typeof periodoValido>) {
+async function carregar(intervalo: IntervaloPainel) {
   try {
     const [painel, recentes] = await Promise.all([
-      montarPainel(periodo),
+      montarPainel(intervalo),
       listarChamados({ limite: 10 }),
     ]);
     return { painel, recentes: recentes.itens, falha: null };
@@ -51,7 +51,7 @@ async function carregar(periodo: ReturnType<typeof periodoValido>) {
 
 function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamado[] }) {
   const { indicadores } = painel;
-  const periodo = `desde ${formatarDiaCurto(painel.inicio)}`;
+  const periodo = descreverIntervalo(painel.inicio, painel.fim, painel.ateHoje);
 
   return (
     <>
@@ -82,7 +82,7 @@ function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamad
 
       <SecaoPainel
         titulo="Abertos × solucionados por dia"
-        subtitulo={`Últimos ${painel.periodoDias} dias`}
+        subtitulo={`${formatarNumero(painel.periodoDias)} ${painel.periodoDias === 1 ? 'dia' : 'dias'}, ${periodo}`}
       >
         <GraficoEvolucao pontos={painel.evolucaoDiaria} />
       </SecaoPainel>
@@ -122,14 +122,15 @@ function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamad
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ dias?: string }>;
+  searchParams: Promise<{ dias?: string; de?: string; ate?: string }>;
 }) {
   const usuario = await verificarSessao((await cookies()).get(COOKIE_SESSAO)?.value);
   if (!usuario) redirect('/login');
   if (!(await acessoAindaValido(usuario))) redirect('/sair?aviso=acesso-removido');
 
-  const periodo = periodoValido((await searchParams).dias);
-  const { painel, recentes, falha } = await carregar(periodo);
+  const intervalo = intervaloDoPainel(await searchParams);
+  const hoje = intervaloDoPainel({}).fim;
+  const { painel, recentes, falha } = await carregar(intervalo);
 
   return (
     <>
@@ -138,7 +139,14 @@ export default async function Home({
         administrador={ehAdministrador(usuario.login)}
         ativo="painel"
         subtitulo="Visão geral do atendimento"
-        acoes={<FiltroPeriodo atual={periodo} opcoes={PERIODOS_PAINEL} />}
+        acoes={
+          <FiltroPeriodo
+            key={`${intervalo.inicio}:${intervalo.fim}`}
+            intervalo={intervalo}
+            opcoes={PERIODOS_PAINEL}
+            hoje={hoje}
+          />
+        }
       />
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">

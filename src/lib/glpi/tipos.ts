@@ -139,9 +139,17 @@ export type PontoDiario = {
   solucionados: number;
 };
 
-export type PainelChamados = {
-  periodoDias: PeriodoPainel;
+export type IntervaloPainel = {
   inicio: string;
+  fim: string;
+  atalho: PeriodoPainel | null;
+};
+
+export type PainelChamados = {
+  periodoDias: number;
+  inicio: string;
+  fim: string;
+  ateHoje: boolean;
   geradoEm: string;
   indicadores: {
     emAberto: number;

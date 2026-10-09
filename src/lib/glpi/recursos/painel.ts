@@ -1,8 +1,9 @@
-import { buscarTodos, LinhaBusca } from '../busca';
+import { buscarTodos, CriterioBusca, LinhaBusca } from '../busca';
 import {
   CAMPO_BUSCA_CHAMADO as CAMPO,
   FatiaPainel,
   FILTRO_STATUS_EM_ABERTO,
+  IntervaloPainel,
   PainelChamados,
   PeriodoPainel,
   PontoDiario,
@@ -17,6 +18,7 @@ import { obterNomesDeUsuarios } from './usuarios';
 const FUSO_HORARIO = 'America/Sao_Paulo';
 const MAXIMO_FATIAS = 8;
 const SEPARADOR_MULTIPLOS = '$$##$$';
+const MAXIMO_DIAS_INTERVALO = 366;
 
 export const PERIODOS_PAINEL: PeriodoPainel[] = [7, 30, 90];
 
@@ -95,15 +97,48 @@ async function comNomesDeTecnicos(chamados: ResumoChamado[]): Promise<ResumoCham
   }));
 }
 
+function diaValido(valor: unknown): string | null {
+  if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return null;
+  const [ano, mes, dia] = valor.split('-').map(Number);
+  const data = new Date(Date.UTC(ano, mes - 1, dia));
+  return data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia ? valor : null;
+}
+
+function diasEntre(inicio: string, fim: string): number {
+  return Math.round((Date.parse(`${fim}T00:00:00Z`) - Date.parse(`${inicio}T00:00:00Z`)) / 86_400_000) + 1;
+}
+
 export function periodoValido(valor: unknown): PeriodoPainel {
   const convertido = Number(valor);
   return PERIODOS_PAINEL.find((periodo) => periodo === convertido) ?? 30;
 }
 
-export async function montarPainel(periodoDias: PeriodoPainel = 30): Promise<PainelChamados> {
+export function intervaloDoPainel(parametros: { dias?: unknown; de?: unknown; ate?: unknown }): IntervaloPainel {
   const hoje = hojeNoFuso();
-  const inicio = somarDias(hoje, -(periodoDias - 1));
-  const limiteInferior = `${somarDias(inicio, -1)} 23:59:59`;
+  const de = diaValido(parametros.de);
+  const ate = diaValido(parametros.ate);
+
+  if (de && ate && de <= ate && ate <= hoje && diasEntre(de, ate) <= MAXIMO_DIAS_INTERVALO) {
+    return { inicio: de, fim: ate, atalho: null };
+  }
+
+  const atalho = periodoValido(parametros.dias);
+  return { inicio: somarDias(hoje, -(atalho - 1)), fim: hoje, atalho };
+}
+
+function criteriosDoIntervalo(campo: number, inicio: string, fim: string): CriterioBusca[] {
+  return [
+    { campo, tipo: 'morethan', valor: `${somarDias(inicio, -1)} 23:59:59` },
+    { campo, tipo: 'lessthan', valor: `${somarDias(fim, 1)} 00:00:00`, ligacao: 'AND' },
+  ];
+}
+
+export async function montarPainel(
+  intervalo: IntervaloPainel = intervaloDoPainel({}),
+): Promise<PainelChamados> {
+  const hoje = hojeNoFuso();
+  const { inicio, fim } = intervalo;
+  const periodoDias = diasEntre(inicio, fim);
 
   const [emAberto, abertos, solucionados] = await Promise.all([
     buscarTodos('Ticket', {
@@ -112,12 +147,12 @@ export async function montarPainel(periodoDias: PeriodoPainel = 30): Promise<Pai
       ordenarPor: CAMPO.abertoEm,
     }),
     buscarTodos('Ticket', {
-      criterios: [{ campo: CAMPO.abertoEm, tipo: 'morethan', valor: limiteInferior }],
+      criterios: criteriosDoIntervalo(CAMPO.abertoEm, inicio, fim),
       campos: [CAMPO.abertoEm, CAMPO.categoria],
       ordenarPor: CAMPO.abertoEm,
     }),
     buscarTodos('Ticket', {
-      criterios: [{ campo: CAMPO.solucionadoEm, tipo: 'morethan', valor: limiteInferior }],
+      criterios: criteriosDoIntervalo(CAMPO.solucionadoEm, inicio, fim),
       campos: [CAMPO.abertoEm, CAMPO.solucionadoEm],
       ordenarPor: CAMPO.solucionadoEm,
     }),
@@ -150,6 +185,8 @@ export async function montarPainel(periodoDias: PeriodoPainel = 30): Promise<Pai
   return {
     periodoDias,
     inicio,
+    fim,
+    ateHoje: fim === hoje,
     geradoEm: new Date().toISOString(),
     indicadores: {
       emAberto: emAberto.total,

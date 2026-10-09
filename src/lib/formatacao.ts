@@ -29,6 +29,13 @@ export function formatarDiaCurto(dia: string): string {
   return `${diaDoMes}/${mes}`;
 }
 
+export function descreverIntervalo(inicio: string, fim: string, ateHoje: boolean): string {
+  if (ateHoje) return `desde ${formatarDiaCurto(inicio)}`;
+  const comAno = inicio.slice(0, 4) !== fim.slice(0, 4);
+  const dia = (valor: string) => (comAno ? `${formatarDiaCurto(valor)}/${valor.slice(0, 4)}` : formatarDiaCurto(valor));
+  return inicio === fim ? `em ${dia(inicio)}` : `de ${dia(inicio)} a ${dia(fim)}`;
+}
+
 export function formatarDiaLongo(dia: string): string {
   const [ano, mes, diaDoMes] = dia.split('-').map(Number);
   return new Intl.DateTimeFormat('pt-BR', {
