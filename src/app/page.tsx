@@ -60,13 +60,14 @@ function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamad
           destaque
           rotulo="Chamados em aberto"
           valor={formatarNumero(indicadores.emAberto)}
-          detalhe={`${formatarNumero(indicadores.paradosHaMaisDe30Dias)} abertos há mais de 30 dias`}
+          detalhe={`Agora · ${formatarNumero(indicadores.paradosHaMaisDe30Dias)} abertos há mais de 30 dias`}
         />
         <CartaoIndicador
           rotulo="Novos, sem atendimento"
           valor={formatarNumero(indicadores.novos)}
+          detalhe="Agora"
         />
-        <CartaoIndicador rotulo="Pendentes" valor={formatarNumero(indicadores.pendentes)} />
+        <CartaoIndicador rotulo="Pendentes" valor={formatarNumero(indicadores.pendentes)} detalhe="Agora" />
         <CartaoIndicador
           rotulo="Abertos no período"
           valor={formatarNumero(indicadores.abertosNoPeriodo)}
@@ -87,13 +88,16 @@ function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamad
       </SecaoPainel>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SecaoPainel titulo="Em aberto por status">
+        <SecaoPainel titulo="Em aberto por status" subtitulo="Situação agora, independe do período">
           <GraficoBarras fatias={painel.emAbertoPorStatus} vazio="Nenhum chamado em aberto." />
         </SecaoPainel>
-        <SecaoPainel titulo="Em aberto por prioridade">
+        <SecaoPainel titulo="Em aberto por prioridade" subtitulo="Situação agora, independe do período">
           <GraficoBarras fatias={painel.emAbertoPorPrioridade} vazio="Nenhum chamado em aberto." />
         </SecaoPainel>
-        <SecaoPainel titulo="Em aberto por técnico" subtitulo="Chamados com mais de um técnico contam para cada um">
+        <SecaoPainel
+          titulo="Em aberto por técnico"
+          subtitulo="Situação agora · chamados com mais de um técnico contam para cada um"
+        >
           <GraficoBarras fatias={painel.emAbertoPorTecnico} vazio="Nenhum chamado em aberto." />
         </SecaoPainel>
         <SecaoPainel titulo="Categorias mais abertas" subtitulo={`Chamados abertos ${periodo}`}>
