@@ -1,4 +1,4 @@
-export { lerConfigGlpi, limparCacheConfig } from './config';
+export { lerConfigGlpi, limparCacheConfig, NOME_PADRAO_GRUPO_BLOQUEADOS } from './config';
 export type { ConfigGlpi } from './config';
 export { ErroGlpi, ehErroGlpi, mensagemDeErro } from './erros';
 export { requisitarGlpi } from './cliente';
@@ -10,12 +10,12 @@ export { buscarTodos } from './busca';
 export type { CriterioBusca, OpcoesBusca, ResultadoBusca } from './busca';
 export { obterNomesDeUsuarios, listarUsuarios } from './recursos/usuarios';
 export {
-  obterGrupoPainel,
-  criarGrupoPainel,
-  listarLiberados,
-  usuarioLiberado,
-  liberarUsuario,
-  revogarUsuario,
+  obterGrupoBloqueados,
+  criarGrupoBloqueados,
+  listarBloqueados,
+  usuarioBloqueado,
+  bloquearUsuario,
+  desbloquearUsuario,
 } from './recursos/acesso-painel';
 export { montarPainel, periodoValido, PERIODOS_PAINEL } from './recursos/painel';
 export * from './tipos';

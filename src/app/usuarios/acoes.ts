@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { ehAdministrador } from '@/lib/autenticacao/acesso';
 import { COOKIE_SESSAO, verificarSessao } from '@/lib/autenticacao/sessao-usuario';
 import { mensagemDeErro } from '@/lib/glpi/erros';
-import { liberarUsuario, revogarUsuario } from '@/lib/glpi/recursos/acesso-painel';
+import { bloquearUsuario, desbloquearUsuario } from '@/lib/glpi/recursos/acesso-painel';
 
 export type ResultadoAcesso = { ok: true } | { ok: false; erro: string };
 
@@ -22,8 +22,8 @@ export async function definirAcesso(usuarioId: number, permitir: boolean): Promi
   }
 
   try {
-    if (permitir) await liberarUsuario(usuarioId);
-    else await revogarUsuario(usuarioId);
+    if (permitir) await desbloquearUsuario(usuarioId);
+    else await bloquearUsuario(usuarioId);
     return { ok: true };
   } catch (erro) {
     console.error('[usuarios] falha ao alterar acesso no GLPI', erro);

@@ -17,10 +17,10 @@ function lista<T>(dados: unknown): T[] {
   return Array.isArray(dados) ? (dados as T[]) : [];
 }
 
-export async function obterGrupoPainel(): Promise<GrupoGlpi | null> {
+export async function obterGrupoBloqueados(): Promise<GrupoGlpi | null> {
   if (grupoEmCache && grupoEmCache.expiraEm > Date.now()) return grupoEmCache.grupo;
 
-  const nome = lerConfigGlpi().grupoPainel;
+  const nome = lerConfigGlpi().grupoBloqueados;
   const resposta = await requisitarGlpi<GrupoGlpi[]>('Group', {
     parametros: { 'searchText[name]': `^${nome}$`, range: '0-9' },
   });
@@ -29,8 +29,8 @@ export async function obterGrupoPainel(): Promise<GrupoGlpi | null> {
   return grupo ? lembrarGrupo({ id: Number(grupo.id), name: grupo.name }) : null;
 }
 
-export async function criarGrupoPainel(): Promise<GrupoGlpi> {
-  const nome = lerConfigGlpi().grupoPainel;
+export async function criarGrupoBloqueados(): Promise<GrupoGlpi> {
+  const nome = lerConfigGlpi().grupoBloqueados;
   const resposta = await requisitarGlpi<{ id: number }>('Group', {
     metodo: 'POST',
     corpo: {
@@ -46,7 +46,7 @@ export async function criarGrupoPainel(): Promise<GrupoGlpi> {
         is_notify: 0,
         is_itemgroup: 0,
         is_manager: 0,
-        comment: 'Usuários liberados para o painel de chamados. Gerido pela tela Usuários do painel.',
+        comment: 'Usuários bloqueados no painel de chamados. Gerido pela tela Usuários do painel.',
       },
     },
   });
@@ -54,8 +54,8 @@ export async function criarGrupoPainel(): Promise<GrupoGlpi> {
   return lembrarGrupo({ id: Number(resposta.dados.id), name: nome });
 }
 
-async function garantirGrupoPainel(): Promise<GrupoGlpi> {
-  return (await obterGrupoPainel()) ?? criarGrupoPainel();
+async function garantirGrupoBloqueados(): Promise<GrupoGlpi> {
+  return (await obterGrupoBloqueados()) ?? criarGrupoBloqueados();
 }
 
 function vinculosDoGrupo(grupoId: number, inicio: number) {
@@ -64,8 +64,8 @@ function vinculosDoGrupo(grupoId: number, inicio: number) {
   });
 }
 
-export async function listarLiberados(): Promise<Set<number>> {
-  const grupo = await obterGrupoPainel();
+export async function listarBloqueados(): Promise<Set<number>> {
+  const grupo = await obterGrupoBloqueados();
   if (!grupo) return new Set();
 
   const primeira = await vinculosDoGrupo(grupo.id, 0);
@@ -92,8 +92,8 @@ async function vinculoDoUsuario(
   return lista<VinculoGrupoUsuarioGlpi>(resposta.dados).find((vinculo) => Number(vinculo.groups_id) === grupoId) ?? null;
 }
 
-export async function usuarioLiberado(usuarioId: number): Promise<boolean> {
-  const grupo = await obterGrupoPainel();
+export async function usuarioBloqueado(usuarioId: number): Promise<boolean> {
+  const grupo = await obterGrupoBloqueados();
   if (!grupo) return false;
   return (await vinculoDoUsuario(usuarioId, grupo.id)) !== null;
 }
@@ -106,8 +106,8 @@ function ehDuplicidade(erro: unknown): boolean {
   );
 }
 
-export async function liberarUsuario(usuarioId: number): Promise<void> {
-  const grupo = await garantirGrupoPainel();
+export async function bloquearUsuario(usuarioId: number): Promise<void> {
+  const grupo = await garantirGrupoBloqueados();
   try {
     await requisitarGlpi('Group_User', {
       metodo: 'POST',
@@ -118,8 +118,8 @@ export async function liberarUsuario(usuarioId: number): Promise<void> {
   }
 }
 
-export async function revogarUsuario(usuarioId: number): Promise<void> {
-  const grupo = await obterGrupoPainel();
+export async function desbloquearUsuario(usuarioId: number): Promise<void> {
+  const grupo = await obterGrupoBloqueados();
   if (!grupo) return;
 
   const vinculo = await vinculoDoUsuario(usuarioId, grupo.id);

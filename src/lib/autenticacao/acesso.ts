@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers';
 import { COOKIE_SESSAO, UsuarioSessao, verificarSessao } from '@/lib/autenticacao/sessao-usuario';
 import { ErroGlpi } from '@/lib/glpi/erros';
-import { usuarioLiberado } from '@/lib/glpi/recursos/acesso-painel';
+import { usuarioBloqueado } from '@/lib/glpi/recursos/acesso-painel';
 
-export type NivelAcesso = 'administrador' | 'liberado' | 'sem-acesso';
+export type NivelAcesso = 'administrador' | 'liberado' | 'bloqueado';
 
 function normalizarLogin(login: string): string {
   return login.trim().toLowerCase();
@@ -22,15 +22,15 @@ export function ehAdministrador(login: string): boolean {
 
 export async function nivelDeAcesso(usuario: { id: number; login: string }): Promise<NivelAcesso> {
   if (ehAdministrador(usuario.login)) return 'administrador';
-  return (await usuarioLiberado(usuario.id)) ? 'liberado' : 'sem-acesso';
+  return (await usuarioBloqueado(usuario.id)) ? 'bloqueado' : 'liberado';
 }
 
 export async function acessoAindaValido(usuario: { id: number; login: string }): Promise<boolean> {
   if (ehAdministrador(usuario.login)) return true;
   try {
-    return await usuarioLiberado(usuario.id);
+    return !(await usuarioBloqueado(usuario.id));
   } catch (erro) {
-    console.error('[acesso] não foi possível reconferir a liberação no GLPI', erro);
+    console.error('[acesso] não foi possível reconferir o bloqueio no GLPI', erro);
     return true;
   }
 }

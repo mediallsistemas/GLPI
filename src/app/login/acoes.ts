@@ -48,9 +48,9 @@ export async function entrar(_anterior: EstadoLogin, dados: FormData): Promise<E
     const usuario = await autenticarUsuarioGlpi(login, senha);
     limparFalhas(chave);
 
-    if ((await nivelDeAcesso(usuario)) === 'sem-acesso') {
+    if ((await nivelDeAcesso(usuario)) === 'bloqueado') {
       return {
-        erro: 'Seu usuário ainda não foi liberado para este painel. Peça a liberação a um administrador.',
+        erro: 'Seu acesso a este painel está bloqueado. Fale com um administrador.',
         login,
       };
     }

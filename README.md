@@ -31,7 +31,7 @@ npm run build
 | `GLPI_USER_TOKEN` | Token pessoal do usuário de serviço — Preferências do usuário → API |
 | `SESSAO_SEGREDO` | Assina o cookie de sessão do painel; 32+ caracteres (`openssl rand -base64 48`) |
 | `PAINEL_ADMINISTRADORES` | Logins do GLPI que administram o painel, separados por vírgula |
-| `GLPI_GRUPO_PAINEL` | Nome do grupo do GLPI que guarda quem tem acesso (padrão `Painel de chamados`) |
+| `GLPI_GRUPO_BLOQUEADOS` | Nome do grupo do GLPI que guarda quem está bloqueado (padrão `Painel de chamados - bloqueados`) |
 
 A API REST precisa estar **habilitada** no GLPI, com **"Habilitar login com
 credenciais"** ativo (é assim que o painel valida a senha de quem entra), e o IP de
@@ -49,19 +49,20 @@ decide se a pessoa pode entrar:
 
 1. **Administradores** (`PAINEL_ADMINISTRADORES`) sempre entram e veem a tela
    **Usuários**, que lista todos os usuários do GLPI com um interruptor de acesso.
-2. **Liberados** são os membros do grupo `GLPI_GRUPO_PAINEL` no GLPI. O interruptor da
-   tela Usuários inclui ou remove a pessoa desse grupo. O grupo é criado pela própria
-   integração na primeira liberação, sem permissões de atribuição de chamado.
-3. Quem não é nem um nem outro recebe "ainda não foi liberado" no login.
+2. **Todo usuário ativo do GLPI** entra por padrão.
+3. **Bloqueados** são os membros do grupo `GLPI_GRUPO_BLOQUEADOS` no GLPI e recebem
+   "acesso bloqueado" no login. Desligar o interruptor da tela Usuários inclui a pessoa
+   nesse grupo; ligar remove. O grupo é criado pela própria integração no primeiro
+   bloqueio, sem permissões de atribuição de chamado.
 
-A liberação é reconferida a cada abertura do painel, então remover alguém encerra a
+O bloqueio é reconferido a cada abertura do painel, então bloquear alguém encerra a
 sessão dela na próxima visita. Os dados do painel continuam vindo da conta de serviço:
 todo mundo que entra vê o mesmo conteúdo.
 
 ## Endpoints locais
 
-Todas exigem sessão do painel e liberação vigente (`exigirAcesso`): sem sessão
-respondem 401, sem liberação 403.
+Todas exigem sessão do painel e usuário não bloqueado (`exigirAcesso`): sem sessão
+respondem 401, bloqueado 403.
 
 | Rota | O que faz |
 |---|---|

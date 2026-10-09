@@ -4,10 +4,10 @@ export type ConfigGlpi = {
   urlApi: string;
   appToken: string;
   userToken: string;
-  grupoPainel: string;
+  grupoBloqueados: string;
 };
 
-const NOME_PADRAO_GRUPO_PAINEL = 'Painel de chamados';
+export const NOME_PADRAO_GRUPO_BLOQUEADOS = 'Painel de chamados - bloqueados';
 
 let cache: ConfigGlpi | null = null;
 
@@ -37,7 +37,7 @@ export function lerConfigGlpi(): ConfigGlpi {
     urlApi,
     appToken: obrigatoria('GLPI_APP_TOKEN'),
     userToken: obrigatoria('GLPI_USER_TOKEN'),
-    grupoPainel: process.env.GLPI_GRUPO_PAINEL?.trim() || NOME_PADRAO_GRUPO_PAINEL,
+    grupoBloqueados: process.env.GLPI_GRUPO_BLOQUEADOS?.trim() || NOME_PADRAO_GRUPO_BLOQUEADOS,
   };
 
   return cache;

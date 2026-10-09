@@ -45,7 +45,7 @@ function atualizarConjunto(
 
 export function ListaUsuarios({ linhas, grupoExiste }: { linhas: LinhaUsuario[]; grupoExiste: boolean }) {
   const [busca, setBusca] = useState('');
-  const [somenteComAcesso, setSomenteComAcesso] = useState(false);
+  const [somenteBloqueados, setSomenteBloqueados] = useState(false);
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [liberados, setLiberados] = useState(
     () => new Set(linhas.filter((linha) => linha.liberado).map((linha) => linha.id)),
@@ -58,13 +58,13 @@ export function ListaUsuarios({ linhas, grupoExiste }: { linhas: LinhaUsuario[];
     const termo = normalizarTexto(busca.trim());
     return linhas.filter((linha) => {
       if (!mostrarInativos && !linha.ativo) return false;
-      if (somenteComAcesso && !linha.administrador && !liberados.has(linha.id)) return false;
+      if (somenteBloqueados && (linha.administrador || liberados.has(linha.id))) return false;
       if (termo === '') return true;
       return normalizarTexto(`${linha.nome} ${linha.login} ${linha.entidade ?? ''}`).includes(termo);
     });
-  }, [linhas, busca, somenteComAcesso, mostrarInativos, liberados]);
+  }, [linhas, busca, somenteBloqueados, mostrarInativos, liberados]);
 
-  const totalComAcesso = linhas.filter((linha) => linha.administrador || liberados.has(linha.id)).length;
+  const totalBloqueados = linhas.filter((linha) => !linha.administrador && !liberados.has(linha.id)).length;
 
   function alternar(linha: LinhaUsuario) {
     const permitir = !liberados.has(linha.id);
@@ -101,11 +101,11 @@ export function ListaUsuarios({ linhas, grupoExiste }: { linhas: LinhaUsuario[];
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
-              checked={somenteComAcesso}
-              onChange={(evento) => setSomenteComAcesso(evento.target.checked)}
+              checked={somenteBloqueados}
+              onChange={(evento) => setSomenteBloqueados(evento.target.checked)}
               className="size-4 accent-serie-1"
             />
-            Somente com acesso
+            Somente bloqueados
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -121,7 +121,7 @@ export function ListaUsuarios({ linhas, grupoExiste }: { linhas: LinhaUsuario[];
 
       <p className="text-sm text-texto-secundario">
         {formatarNumero(visiveis.length)} de {formatarNumero(linhas.length)} usuários ·{' '}
-        {formatarNumero(totalComAcesso)} com acesso ao painel
+        {formatarNumero(totalBloqueados)} bloqueados no painel
       </p>
 
       {erro ? (
@@ -178,7 +178,7 @@ export function ListaUsuarios({ linhas, grupoExiste }: { linhas: LinhaUsuario[];
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-3">
                         <span className="text-xs whitespace-nowrap text-texto-secundario">
-                          {linha.administrador ? 'Sempre' : ligado ? 'Liberado' : 'Sem acesso'}
+                          {linha.administrador ? 'Sempre' : ligado ? 'Liberado' : 'Bloqueado'}
                         </span>
                         <InterruptorAcesso
                           ligado={ligado}
@@ -188,8 +188,8 @@ export function ListaUsuarios({ linhas, grupoExiste }: { linhas: LinhaUsuario[];
                           titulo={
                             linha.administrador
                               ? 'Administradores sempre têm acesso. Ajuste em PAINEL_ADMINISTRADORES.'
-                              : !grupoExiste && !ligado
-                                ? 'A primeira liberação cria o grupo no GLPI.'
+                              : !grupoExiste && ligado
+                                ? 'O primeiro bloqueio cria o grupo no GLPI.'
                                 : undefined
                           }
                           aoAlternar={() => alternar(linha)}
