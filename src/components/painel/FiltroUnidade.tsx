@@ -35,9 +35,9 @@ export function FiltroUnidade({
         onChange={escolher}
         className="max-w-[16rem] rounded border border-white/20 bg-white/10 px-2 py-1 text-sm text-marinho-texto [color-scheme:dark] outline-none focus:border-destaque"
       >
-        <option value="">Todas as unidades</option>
+        <option value="" className="bg-marinho text-marinho-texto">Todas as unidades</option>
         {unidades.map((unidade) => (
-          <option key={unidade.id} value={unidade.id}>
+          <option key={unidade.id} value={unidade.id} className="bg-marinho text-marinho-texto">
             {unidade.nome}
           </option>
         ))}
