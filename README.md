@@ -86,7 +86,7 @@ respondem 401, bloqueado 403.
 | `GET /api/glpi/painel?dias=30` ou `?de=2026-09-01&ate=2026-09-30` | Indicadores do painel (últimos 7/30/90 dias ou intervalo de até 366 dias) |
 | `GET /api/glpi/chamados?inicio=0&limite=25&ordem=DESC` | Lista chamados |
 | `GET /api/glpi/chamados/:id` | Detalhe de um chamado (404 se for de unidade fora do escopo) |
-| `GET /api/glpi/exportar?formato=xlsx` ou `pdf`, com os mesmos filtros do painel | Resumo e chamados abertos no período |
+| `GET /api/glpi/exportar?formato=xlsx` ou `pdf`, com os mesmos filtros do painel | Excel: resumo e chamados abertos no período. PDF: o painel no mesmo visual da tela (indicadores, gráficos) e a lista de chamados abertos no período |
 
 Painel, chamados e exportação aceitam `&unidade=<id>`: o id de uma entidade do GLPI dentro
 do escopo de quem pede. O filtro inclui as subunidades autorizadas; um id fora do escopo é

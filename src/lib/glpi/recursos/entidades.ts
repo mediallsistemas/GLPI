@@ -60,6 +60,13 @@ export async function listarUnidades(): Promise<Unidade[]> {
   return unidades;
 }
 
+export async function nomeSemRaiz(): Promise<(completo: string) => string> {
+  const raizes = (await listarUnidades()).filter((unidade) => unidade.pai === null);
+  if (raizes.length !== 1) return (completo) => completo;
+  const prefixo = `${raizes[0].nome}${SEPARADOR}`;
+  return (completo) => (completo.startsWith(prefixo) ? completo.slice(prefixo.length) : completo);
+}
+
 function arvore(unidades: Unidade[]) {
   const existentes = new Set(unidades.map((unidade) => unidade.id));
   const filhos = new Map<number, number[]>();

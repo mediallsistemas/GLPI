@@ -10,6 +10,7 @@ import {
   rotuloTipo,
   Unidade,
 } from '../tipos';
+import { nomeSemRaiz } from './entidades';
 import { comNomesDeTecnicos, criteriosDoIntervalo, lista, montarPainel } from './painel';
 
 const MAXIMO_LINHAS = 10_000;
@@ -53,12 +54,15 @@ export async function montarRelatorio(
     })),
   );
 
+  const nomeDaUnidade = await nomeSemRaiz();
   const chamados: LinhaRelatorio[] = comTecnicos.map((c) => ({
     id: c.id,
     titulo: textoLimpo(c.linha[CAMPO.titulo]) ?? '',
-    unidade: textoLimpo(c.linha[CAMPO.entidade]) ?? '',
+    unidade: nomeDaUnidade(textoLimpo(c.linha[CAMPO.entidade]) ?? ''),
     status: rotuloStatus(c.status),
+    codigoStatus: c.status,
     prioridade: rotuloPrioridade(c.prioridade),
+    codigoPrioridade: c.prioridade,
     tipo: rotuloTipo(c.tipo),
     categoria: c.categoria ?? 'Sem categoria',
     tecnicos: c.tecnicos.join(', ') || 'Sem técnico',

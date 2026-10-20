@@ -160,7 +160,9 @@ export type LinhaRelatorio = {
   titulo: string;
   unidade: string;
   status: string;
+  codigoStatus: number;
   prioridade: string;
+  codigoPrioridade: number;
   tipo: string;
   categoria: string;
   tecnicos: string;
