@@ -12,10 +12,12 @@ export function FiltroPeriodo({
   intervalo,
   opcoes,
   hoje,
+  consultaUnidade,
 }: {
   intervalo: IntervaloPainel;
   opcoes: PeriodoPainel[];
   hoje: string;
+  consultaUnidade: string;
 }) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
@@ -35,13 +37,13 @@ export function FiltroPeriodo({
     if (evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.button !== 0) return;
     evento.preventDefault();
     if (dias === selecionado) return;
-    navegar(dias, `/?dias=${dias}`);
+    navegar(dias, `/?dias=${dias}${consultaUnidade}`);
   }
 
   function aplicarDatas(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (intervaloInvalido) return;
-    navegar('datas', `/?de=${de}&ate=${ate}`);
+    navegar('datas', `/?de=${de}&ate=${ate}${consultaUnidade}`);
   }
 
   return (
@@ -54,7 +56,7 @@ export function FiltroPeriodo({
             return (
               <Link
                 key={dias}
-                href={`/?dias=${dias}`}
+                href={`/?dias=${dias}${consultaUnidade}`}
                 scroll={false}
                 onClick={(evento) => escolherAtalho(evento, dias)}
                 aria-current={ativo ? 'page' : undefined}

@@ -8,6 +8,7 @@ export { listarChamados, obterChamado } from './recursos/chamados';
 export type { FiltroChamados } from './recursos/chamados';
 export { buscarTodos } from './busca';
 export type { CriterioBusca, OpcoesBusca, ResultadoBusca } from './busca';
+export { listarUnidades, unidadeValida } from './recursos/entidades';
 export { obterNomesDeUsuarios, listarUsuarios } from './recursos/usuarios';
 export {
   obterGrupoBloqueados,
@@ -19,3 +20,4 @@ export {
 } from './recursos/acesso-painel';
 export { intervaloDoPainel, montarPainel, periodoValido, PERIODOS_PAINEL } from './recursos/painel';
 export * from './tipos';
+export { montarRelatorio } from './recursos/relatorio';

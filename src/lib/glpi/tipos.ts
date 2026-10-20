@@ -34,8 +34,11 @@ export const CAMPO_BUSCA_CHAMADO = {
   status: 12,
   tipo: 14,
   abertoEm: 15,
+  fechadoEm: 16,
   solucionadoEm: 17,
   atualizadoEm: 19,
+  descricao: 21,
+  entidade: 80,
 } as const;
 
 export type StatusChamado = keyof typeof STATUS_CHAMADO;
@@ -107,6 +110,17 @@ export type VinculoGrupoUsuarioGlpi = {
   groups_id: number | string;
 };
 
+export type EntidadeGlpi = {
+  id: number;
+  name: string;
+  completename?: string | null;
+};
+
+export type Unidade = {
+  id: number;
+  nome: string;
+};
+
 export type PaginaDeChamados = {
   itens: Chamado[];
   total: number | null;
@@ -123,6 +137,26 @@ export type ResumoChamado = {
   solucionadoEm: string | null;
   categoria: string | null;
   tecnicos: string[];
+};
+
+export type LinhaRelatorio = {
+  id: number;
+  titulo: string;
+  unidade: string;
+  status: string;
+  prioridade: string;
+  tipo: string;
+  categoria: string;
+  tecnicos: string;
+  abertoEm: string;
+  solucionadoEm: string;
+};
+
+export type RelatorioChamados = {
+  painel: PainelChamados;
+  unidade: Unidade | null;
+  chamados: LinhaRelatorio[];
+  truncado: boolean;
 };
 
 export type PeriodoPainel = 7 | 30 | 90;

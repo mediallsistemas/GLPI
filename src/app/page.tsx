@@ -7,7 +7,9 @@ import { acessoAindaValido, ehAdministrador } from '@/lib/autenticacao/acesso';
 import { COOKIE_SESSAO, verificarSessao } from '@/lib/autenticacao/sessao-usuario';
 import { TabelaChamados } from '@/components/TabelaChamados';
 import { CartaoIndicador } from '@/components/painel/CartaoIndicador';
+import { BotoesExportar } from '@/components/painel/BotoesExportar';
 import { FiltroPeriodo } from '@/components/painel/FiltroPeriodo';
+import { FiltroUnidade } from '@/components/painel/FiltroUnidade';
 import { GraficoBarras } from '@/components/painel/GraficoBarras';
 import { GraficoEvolucao } from '@/components/painel/GraficoEvolucao';
 import { SecaoPainel } from '@/components/painel/SecaoPainel';
@@ -16,11 +18,12 @@ import {
   ehErroGlpi,
   intervaloDoPainel,
   listarChamados,
+  listarUnidades,
   mensagemDeErro,
   montarPainel,
   PERIODOS_PAINEL,
 } from '@/lib/glpi';
-import { Chamado, IntervaloPainel, PainelChamados } from '@/lib/glpi/tipos';
+import { Chamado, IntervaloPainel, PainelChamados, Unidade } from '@/lib/glpi/tipos';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,17 +33,25 @@ const horario = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'America/Sao_Paulo',
 });
 
-async function carregar(intervalo: IntervaloPainel) {
+function consultaDoIntervalo(intervalo: IntervaloPainel): string {
+  return intervalo.atalho ? `dias=${intervalo.atalho}` : `de=${intervalo.inicio}&ate=${intervalo.fim}`;
+}
+
+async function carregar(intervalo: IntervaloPainel, idUnidade: string | undefined) {
+  const unidades: Unidade[] = await listarUnidades().catch(() => []);
   try {
+    const unidade = unidades.find((u) => String(u.id) === idUnidade) ?? null;
     const [painel, recentes] = await Promise.all([
-      montarPainel(intervalo),
-      listarChamados({ limite: 10 }),
+      montarPainel(intervalo, unidade),
+      listarChamados({ limite: 10, unidade }),
     ]);
-    return { painel, recentes: recentes.itens, falha: null };
+    return { painel, recentes: recentes.itens, unidades, unidade, falha: null };
   } catch (erro) {
     return {
       painel: null,
       recentes: [] as Chamado[],
+      unidades,
+      unidade: null,
       falha: {
         mensagem: mensagemDeErro(erro),
         configuracao: ehErroGlpi(erro) && erro.codigo === 'CONFIGURACAO_INVALIDA',
@@ -49,7 +60,15 @@ async function carregar(intervalo: IntervaloPainel) {
   }
 }
 
-function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamado[] }) {
+function Painel({
+  painel,
+  recentes,
+  unidade,
+}: {
+  painel: PainelChamados;
+  recentes: Chamado[];
+  unidade: Unidade | null;
+}) {
   const { indicadores } = painel;
   const periodo = descreverIntervalo(painel.inicio, painel.fim, painel.ateHoje);
 
@@ -110,6 +129,7 @@ function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamad
       </SecaoPainel>
 
       <p className="text-xs text-texto-suave">
+        {unidade ? `Unidade: ${unidade.nome}, incluindo subunidades. ` : ''}
         Atualizado em {horario.format(new Date(painel.geradoEm))}.
         {painel.amostraIncompleta
           ? ' O volume excedeu o limite de leitura; os totais estão exatos, mas as distribuições usam uma amostra.'
@@ -122,15 +142,16 @@ function Painel({ painel, recentes }: { painel: PainelChamados; recentes: Chamad
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ dias?: string; de?: string; ate?: string }>;
+  searchParams: Promise<{ dias?: string; de?: string; ate?: string; unidade?: string }>;
 }) {
   const usuario = await verificarSessao((await cookies()).get(COOKIE_SESSAO)?.value);
   if (!usuario) redirect('/login');
   if (!(await acessoAindaValido(usuario))) redirect('/sair?aviso=acesso-removido');
 
-  const intervalo = intervaloDoPainel(await searchParams);
+  const parametros = await searchParams;
+  const intervalo = intervaloDoPainel(parametros);
   const hoje = intervaloDoPainel({}).fim;
-  const { painel, recentes, falha } = await carregar(intervalo);
+  const { painel, recentes, unidades, unidade, falha } = await carregar(intervalo, parametros.unidade);
 
   return (
     <>
@@ -140,12 +161,23 @@ export default async function Home({
         ativo="painel"
         subtitulo="Visão geral do atendimento"
         acoes={
-          <FiltroPeriodo
-            key={`${intervalo.inicio}:${intervalo.fim}`}
-            intervalo={intervalo}
-            opcoes={PERIODOS_PAINEL}
-            hoje={hoje}
-          />
+          <>
+            <FiltroUnidade
+              unidades={unidades}
+              selecionada={unidade?.id ?? null}
+              consultaPeriodo={consultaDoIntervalo(intervalo)}
+            />
+            <FiltroPeriodo
+              key={`${intervalo.inicio}:${intervalo.fim}`}
+              intervalo={intervalo}
+              opcoes={PERIODOS_PAINEL}
+              hoje={hoje}
+              consultaUnidade={unidade ? `&unidade=${unidade.id}` : ''}
+            />
+            <BotoesExportar
+              consulta={`${consultaDoIntervalo(intervalo)}${unidade ? `&unidade=${unidade.id}` : ''}`}
+            />
+          </>
         }
       />
 
@@ -154,7 +186,7 @@ export default async function Home({
         {falha && !falha.configuracao ? (
           <Falha titulo="Não foi possível consultar o GLPI" mensagem={falha.mensagem} />
         ) : null}
-        {painel ? <Painel painel={painel} recentes={recentes} /> : null}
+        {painel ? <Painel painel={painel} recentes={recentes} unidade={unidade} /> : null}
       </main>
     </>
   );

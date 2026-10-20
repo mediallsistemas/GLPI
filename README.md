@@ -69,6 +69,9 @@ respondem 401, bloqueado 403.
 | `GET /api/glpi/status` | Testa a conexão e devolve a sessão da conta de serviço — só administradores |
 | `GET /api/glpi/painel?dias=30` ou `?de=2026-09-01&ate=2026-09-30` | Indicadores do painel (últimos 7/30/90 dias ou intervalo de até 366 dias) |
 | `GET /api/glpi/chamados?inicio=0&limite=25&ordem=DESC` | Lista chamados |
+
+Painel e chamados aceitam `&unidade=<id>`: o id de uma entidade do GLPI. O filtro inclui
+as subunidades (busca `under` no campo 80); um id desconhecido é ignorado e mostra todas.
 | `GET /api/glpi/chamados/:id` | Detalhe de um chamado |
 
 ## Estrutura
@@ -91,7 +94,7 @@ src/
       cliente.ts       fetch autenticado, paginação, erros
       autenticacao.ts  valida usuário e senha de quem entra no painel
       tipos.ts         tipos do GLPI e rótulos em pt-BR
-      recursos/        um arquivo por recurso (chamados, painel, usuarios, acesso-painel)
+      recursos/        um arquivo por recurso (chamados, entidades, painel, usuarios, acesso-painel)
     http/              helpers de resposta das rotas
 ```
 

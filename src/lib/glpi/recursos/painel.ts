@@ -11,8 +11,10 @@ import {
   rotuloPrioridade,
   rotuloStatus,
   STATUS_EM_ABERTO,
+  Unidade,
 } from '../tipos';
 import { textoLimpo as texto } from '../texto';
+import { criterioDaUnidade } from './entidades';
 import { obterNomesDeUsuarios } from './usuarios';
 
 const FUSO_HORARIO = 'America/Sao_Paulo';
@@ -27,7 +29,7 @@ function numero(valor: unknown): number {
   return Number.isFinite(convertido) ? convertido : 0;
 }
 
-function lista(valor: unknown): string[] {
+export function lista(valor: unknown): string[] {
   if (valor === null || valor === undefined) return [];
   return String(valor)
     .split(SEPARADOR_MULTIPLOS)
@@ -86,7 +88,7 @@ function maiores(contagem: Map<string, number>, rotuloOutros: string): FatiaPain
   return [...principais, { rotulo: rotuloOutros, valor: resto }];
 }
 
-async function comNomesDeTecnicos(chamados: ResumoChamado[]): Promise<ResumoChamado[]> {
+export async function comNomesDeTecnicos<T extends ResumoChamado>(chamados: T[]): Promise<T[]> {
   const ids = chamados.flatMap((c) => c.tecnicos).filter((t) => /^\d+$/.test(t)).map(Number);
   if (ids.length === 0) return chamados;
 
@@ -126,7 +128,7 @@ export function intervaloDoPainel(parametros: { dias?: unknown; de?: unknown; at
   return { inicio: somarDias(hoje, -(atalho - 1)), fim: hoje, atalho };
 }
 
-function criteriosDoIntervalo(campo: number, inicio: string, fim: string): CriterioBusca[] {
+export function criteriosDoIntervalo(campo: number, inicio: string, fim: string): CriterioBusca[] {
   return [
     { campo, tipo: 'morethan', valor: `${somarDias(inicio, -1)} 23:59:59` },
     { campo, tipo: 'lessthan', valor: `${somarDias(fim, 1)} 00:00:00`, ligacao: 'AND' },
@@ -135,24 +137,26 @@ function criteriosDoIntervalo(campo: number, inicio: string, fim: string): Crite
 
 export async function montarPainel(
   intervalo: IntervaloPainel = intervaloDoPainel({}),
+  unidade: Unidade | null = null,
 ): Promise<PainelChamados> {
   const hoje = hojeNoFuso();
+  const daUnidade = criterioDaUnidade(unidade);
   const { inicio, fim } = intervalo;
   const periodoDias = diasEntre(inicio, fim);
 
   const [emAberto, abertos, solucionados] = await Promise.all([
     buscarTodos('Ticket', {
-      criterios: [{ campo: CAMPO.status, tipo: 'equals', valor: FILTRO_STATUS_EM_ABERTO }],
+      criterios: [{ campo: CAMPO.status, tipo: 'equals', valor: FILTRO_STATUS_EM_ABERTO }, ...daUnidade],
       campos: [CAMPO.status, CAMPO.prioridade, CAMPO.abertoEm, CAMPO.tecnico],
       ordenarPor: CAMPO.abertoEm,
     }),
     buscarTodos('Ticket', {
-      criterios: criteriosDoIntervalo(CAMPO.abertoEm, inicio, fim),
+      criterios: [...criteriosDoIntervalo(CAMPO.abertoEm, inicio, fim), ...daUnidade],
       campos: [CAMPO.abertoEm, CAMPO.categoria],
       ordenarPor: CAMPO.abertoEm,
     }),
     buscarTodos('Ticket', {
-      criterios: criteriosDoIntervalo(CAMPO.solucionadoEm, inicio, fim),
+      criterios: [...criteriosDoIntervalo(CAMPO.solucionadoEm, inicio, fim), ...daUnidade],
       campos: [CAMPO.abertoEm, CAMPO.solucionadoEm],
       ordenarPor: CAMPO.solucionadoEm,
     }),

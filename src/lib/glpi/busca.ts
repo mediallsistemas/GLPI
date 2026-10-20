@@ -5,7 +5,7 @@ const MAXIMO_PADRAO = 5000;
 
 export type CriterioBusca = {
   campo: number;
-  tipo: 'equals' | 'notequals' | 'contains' | 'morethan' | 'lessthan';
+  tipo: 'equals' | 'notequals' | 'contains' | 'morethan' | 'lessthan' | 'under';
   valor: string | number;
   ligacao?: 'AND' | 'OR';
 };
