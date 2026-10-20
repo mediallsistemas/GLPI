@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 import { AvisoConfiguracao } from '@/components/AvisoConfiguracao';
 import { Cabecalho } from '@/components/Cabecalho';
 import { Falha } from '@/components/Falha';
-import { acessoAindaValido, ehAdministrador } from '@/lib/autenticacao/acesso';
-import { COOKIE_SESSAO, verificarSessao } from '@/lib/autenticacao/sessao-usuario';
+import { acessoAindaValido, ehAdministrador, filtroDoUsuario } from '@/lib/autenticacao/acesso';
+import { COOKIE_SESSAO, UsuarioSessao, verificarSessao } from '@/lib/autenticacao/sessao-usuario';
 import { TabelaChamados } from '@/components/TabelaChamados';
 import { CartaoIndicador } from '@/components/painel/CartaoIndicador';
 import { BotoesExportar } from '@/components/painel/BotoesExportar';
@@ -18,7 +18,6 @@ import {
   ehErroGlpi,
   intervaloDoPainel,
   listarChamados,
-  listarUnidades,
   mensagemDeErro,
   montarPainel,
   PERIODOS_PAINEL,
@@ -37,21 +36,29 @@ function consultaDoIntervalo(intervalo: IntervaloPainel): string {
   return intervalo.atalho ? `dias=${intervalo.atalho}` : `de=${intervalo.inicio}&ate=${intervalo.fim}`;
 }
 
-async function carregar(intervalo: IntervaloPainel, idUnidade: string | undefined) {
-  const unidades: Unidade[] = await listarUnidades().catch(() => []);
+const SEM_DADOS = {
+  painel: null,
+  recentes: [] as Chamado[],
+  unidades: [] as Unidade[],
+  unidade: null,
+  restrito: true,
+  semUnidade: false,
+  falha: null,
+};
+
+async function carregar(usuario: UsuarioSessao, intervalo: IntervaloPainel, idUnidade: string | undefined) {
   try {
-    const unidade = unidades.find((u) => String(u.id) === idUnidade) ?? null;
+    const { unidades, unidade, restrito, semUnidade, criterios } = await filtroDoUsuario(usuario, idUnidade);
+    if (semUnidade) return { ...SEM_DADOS, semUnidade };
+
     const [painel, recentes] = await Promise.all([
-      montarPainel(intervalo, unidade),
-      listarChamados({ limite: 10, unidade }),
+      montarPainel(intervalo, criterios),
+      listarChamados({ limite: 10, criterios }),
     ]);
-    return { painel, recentes: recentes.itens, unidades, unidade, falha: null };
+    return { ...SEM_DADOS, painel, recentes: recentes.itens, unidades, unidade, restrito };
   } catch (erro) {
     return {
-      painel: null,
-      recentes: [] as Chamado[],
-      unidades,
-      unidade: null,
+      ...SEM_DADOS,
       falha: {
         mensagem: mensagemDeErro(erro),
         configuracao: ehErroGlpi(erro) && erro.codigo === 'CONFIGURACAO_INVALIDA',
@@ -64,10 +71,12 @@ function Painel({
   painel,
   recentes,
   unidade,
+  restrito,
 }: {
   painel: PainelChamados;
   recentes: Chamado[];
   unidade: Unidade | null;
+  restrito: boolean;
 }) {
   const { indicadores } = painel;
   const periodo = descreverIntervalo(painel.inicio, painel.fim, painel.ateHoje);
@@ -129,7 +138,7 @@ function Painel({
       </SecaoPainel>
 
       <p className="text-xs text-texto-suave">
-        {unidade ? `Unidade: ${unidade.nome}, incluindo subunidades. ` : ''}
+        {unidade ? `Unidade: ${unidade.nome}. ` : restrito ? 'Somente as unidades do seu usuário no GLPI. ' : ''}
         Atualizado em {horario.format(new Date(painel.geradoEm))}.
         {painel.amostraIncompleta
           ? ' O volume excedeu o limite de leitura; os totais estão exatos, mas as distribuições usam uma amostra.'
@@ -151,7 +160,12 @@ export default async function Home({
   const parametros = await searchParams;
   const intervalo = intervaloDoPainel(parametros);
   const hoje = intervaloDoPainel({}).fim;
-  const { painel, recentes, unidades, unidade, falha } = await carregar(intervalo, parametros.unidade);
+  const { painel, recentes, unidades, unidade, restrito, semUnidade, falha } = await carregar(
+    usuario,
+    intervalo,
+    parametros.unidade,
+  );
+  const consultaUnidade = unidade ? `&unidade=${unidade.id}` : '';
 
   return (
     <>
@@ -166,17 +180,16 @@ export default async function Home({
               unidades={unidades}
               selecionada={unidade?.id ?? null}
               consultaPeriodo={consultaDoIntervalo(intervalo)}
+              rotuloTodas={restrito ? 'Todas as minhas unidades' : 'Todas as unidades'}
             />
             <FiltroPeriodo
               key={`${intervalo.inicio}:${intervalo.fim}`}
               intervalo={intervalo}
               opcoes={PERIODOS_PAINEL}
               hoje={hoje}
-              consultaUnidade={unidade ? `&unidade=${unidade.id}` : ''}
+              consultaUnidade={consultaUnidade}
             />
-            <BotoesExportar
-              consulta={`${consultaDoIntervalo(intervalo)}${unidade ? `&unidade=${unidade.id}` : ''}`}
-            />
+            {painel ? <BotoesExportar consulta={`${consultaDoIntervalo(intervalo)}${consultaUnidade}`} /> : null}
           </>
         }
       />
@@ -186,7 +199,13 @@ export default async function Home({
         {falha && !falha.configuracao ? (
           <Falha titulo="Não foi possível consultar o GLPI" mensagem={falha.mensagem} />
         ) : null}
-        {painel ? <Painel painel={painel} recentes={recentes} unidade={unidade} /> : null}
+        {semUnidade ? (
+          <Falha
+            titulo="Seu usuário não está vinculado a nenhuma unidade"
+            mensagem="O painel mostra apenas os chamados das unidades autorizadas para você no GLPI. Peça a um administrador do GLPI para vincular seu usuário a uma unidade."
+          />
+        ) : null}
+        {painel ? <Painel painel={painel} recentes={recentes} unidade={unidade} restrito={restrito} /> : null}
       </main>
     </>
   );

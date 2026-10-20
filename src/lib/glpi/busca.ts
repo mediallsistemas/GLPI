@@ -3,12 +3,19 @@ import { ParametrosBusca, requisitarGlpi } from './cliente';
 const TAMANHO_PAGINA = 200;
 const MAXIMO_PADRAO = 5000;
 
-export type CriterioBusca = {
+export type CriterioCampo = {
   campo: number;
   tipo: 'equals' | 'notequals' | 'contains' | 'morethan' | 'lessthan' | 'under';
   valor: string | number;
   ligacao?: 'AND' | 'OR';
 };
+
+export type GrupoCriterios = {
+  grupo: CriterioBusca[];
+  ligacao?: 'AND' | 'OR';
+};
+
+export type CriterioBusca = CriterioCampo | GrupoCriterios;
 
 export type OpcoesBusca = {
   criterios?: CriterioBusca[];
@@ -31,6 +38,20 @@ type RespostaBuscaGlpi = {
   data?: LinhaBusca[] | Record<string, LinhaBusca>;
 };
 
+function adicionarCriterios(parametros: ParametrosBusca, prefixo: string, criterios: CriterioBusca[]) {
+  criterios.forEach((criterio, indice) => {
+    const chave = `${prefixo}[${indice}]`;
+    if (indice > 0) parametros[`${chave}[link]`] = criterio.ligacao ?? 'AND';
+    if ('grupo' in criterio) {
+      adicionarCriterios(parametros, `${chave}[criteria]`, criterio.grupo);
+      return;
+    }
+    parametros[`${chave}[field]`] = criterio.campo;
+    parametros[`${chave}[searchtype]`] = criterio.tipo;
+    parametros[`${chave}[value]`] = criterio.valor;
+  });
+}
+
 function montarParametros(opcoes: OpcoesBusca, inicio: number, fim: number): ParametrosBusca {
   const parametros: ParametrosBusca = {
     range: `${inicio}-${fim}`,
@@ -38,12 +59,7 @@ function montarParametros(opcoes: OpcoesBusca, inicio: number, fim: number): Par
     order: opcoes.ordem ?? 'DESC',
   };
 
-  (opcoes.criterios ?? []).forEach((criterio, indice) => {
-    if (indice > 0) parametros[`criteria[${indice}][link]`] = criterio.ligacao ?? 'AND';
-    parametros[`criteria[${indice}][field]`] = criterio.campo;
-    parametros[`criteria[${indice}][searchtype]`] = criterio.tipo;
-    parametros[`criteria[${indice}][value]`] = criterio.valor;
-  });
+  adicionarCriterios(parametros, 'criteria', opcoes.criterios ?? []);
 
   opcoes.campos.forEach((campo, indice) => {
     parametros[`forcedisplay[${indice}]`] = campo;

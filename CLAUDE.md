@@ -43,6 +43,10 @@ Deploy: Vercel.
   exceto os membros do grupo `GLPI_GRUPO_BLOQUEADOS`; quem está em `PAINEL_ADMINISTRADORES`
   entra sempre. Toda regra de acesso passa por
   `src/lib/autenticacao/acesso.ts`; não espalhe checagens de login pelas páginas.
+- **Todo dado de chamado é filtrado pelo escopo de unidades de quem pede.** As rotas e
+  páginas obtêm os critérios com `exigirUnidades(...)` / `filtroDoUsuario(...)` e os passam
+  à busca; nunca liste chamados sem eles. O escopo vem das autorizações (`Profile_User`)
+  do usuário no GLPI.
 
 ## Convenções
 

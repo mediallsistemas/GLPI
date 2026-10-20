@@ -11,10 +11,8 @@ import {
   rotuloPrioridade,
   rotuloStatus,
   STATUS_EM_ABERTO,
-  Unidade,
 } from '../tipos';
 import { textoLimpo as texto } from '../texto';
-import { criterioDaUnidade } from './entidades';
 import { obterNomesDeUsuarios } from './usuarios';
 
 const FUSO_HORARIO = 'America/Sao_Paulo';
@@ -137,10 +135,9 @@ export function criteriosDoIntervalo(campo: number, inicio: string, fim: string)
 
 export async function montarPainel(
   intervalo: IntervaloPainel = intervaloDoPainel({}),
-  unidade: Unidade | null = null,
+  daUnidade: CriterioBusca[] = [],
 ): Promise<PainelChamados> {
   const hoje = hojeNoFuso();
-  const daUnidade = criterioDaUnidade(unidade);
   const { inicio, fim } = intervalo;
   const periodoDias = diasEntre(inicio, fim);
 

@@ -114,12 +114,28 @@ export type EntidadeGlpi = {
   id: number;
   name: string;
   completename?: string | null;
+  entities_id?: number | string | null;
 };
 
 export type Unidade = {
   id: number;
   nome: string;
+  pai: number | null;
 };
+
+export type AutorizacaoGlpi = {
+  id: number;
+  entities_id: number | string;
+  is_recursive: number | string;
+  profiles_id: number | string;
+};
+
+export type Autorizacao = {
+  entidade: number;
+  recursiva: boolean;
+};
+
+export type EscopoUnidades = { completo: true } | { completo: false; autorizacoes: Autorizacao[] };
 
 export type PaginaDeChamados = {
   itens: Chamado[];
@@ -155,6 +171,7 @@ export type LinhaRelatorio = {
 export type RelatorioChamados = {
   painel: PainelChamados;
   unidade: Unidade | null;
+  restrito: boolean;
   chamados: LinhaRelatorio[];
   truncado: boolean;
 };

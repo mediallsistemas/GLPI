@@ -7,8 +7,10 @@ export { obterSessionToken, encerrarSessao, invalidarSessao } from './sessao';
 export { listarChamados, obterChamado } from './recursos/chamados';
 export type { FiltroChamados } from './recursos/chamados';
 export { buscarTodos } from './busca';
-export type { CriterioBusca, OpcoesBusca, ResultadoBusca } from './busca';
-export { listarUnidades, unidadeValida } from './recursos/entidades';
+export type { CriterioBusca, CriterioCampo, GrupoCriterios, OpcoesBusca, ResultadoBusca } from './busca';
+export { filtroDeUnidades, listarUnidades } from './recursos/entidades';
+export type { FiltroUnidades } from './recursos/entidades';
+export { autorizacoesDoUsuario } from './recursos/autorizacoes';
 export { obterNomesDeUsuarios, listarUsuarios } from './recursos/usuarios';
 export {
   obterGrupoBloqueados,

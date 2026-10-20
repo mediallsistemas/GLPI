@@ -1,4 +1,4 @@
-import { buscarTodos } from '../busca';
+import { buscarTodos, CriterioBusca } from '../busca';
 import { textoLimpo } from '../texto';
 import {
   CAMPO_BUSCA_CHAMADO as CAMPO,
@@ -10,19 +10,19 @@ import {
   rotuloTipo,
   Unidade,
 } from '../tipos';
-import { criterioDaUnidade } from './entidades';
 import { comNomesDeTecnicos, criteriosDoIntervalo, lista, montarPainel } from './painel';
 
 const MAXIMO_LINHAS = 10_000;
 
 export async function montarRelatorio(
   intervalo: IntervaloPainel,
-  unidade: Unidade | null,
+  filtro: { unidade: Unidade | null; restrito: boolean; criterios: CriterioBusca[] },
 ): Promise<RelatorioChamados> {
+  const { unidade, restrito, criterios } = filtro;
   const [painel, resultado] = await Promise.all([
-    montarPainel(intervalo, unidade),
+    montarPainel(intervalo, criterios),
     buscarTodos('Ticket', {
-      criterios: [...criteriosDoIntervalo(CAMPO.abertoEm, intervalo.inicio, intervalo.fim), ...criterioDaUnidade(unidade)],
+      criterios: [...criteriosDoIntervalo(CAMPO.abertoEm, intervalo.inicio, intervalo.fim), ...criterios],
       campos: [
         CAMPO.titulo,
         CAMPO.status,
@@ -66,5 +66,5 @@ export async function montarRelatorio(
     solucionadoEm: c.solucionadoEm ?? '',
   }));
 
-  return { painel, unidade, chamados, truncado: resultado.truncado };
+  return { painel, unidade, restrito, chamados, truncado: resultado.truncado };
 }

@@ -1,5 +1,6 @@
-import { buscarTodos, LinhaBusca } from '../busca';
+import { buscarTodos, CriterioBusca, LinhaBusca } from '../busca';
 import { requisitarGlpi } from '../cliente';
+import { ErroGlpi } from '../erros';
 import { textoLimpo } from '../texto';
 import {
   CAMPO_BUSCA_CHAMADO as CAMPO,
@@ -9,9 +10,7 @@ import {
   rotuloPrioridade,
   rotuloStatus,
   rotuloTipo,
-  Unidade,
 } from '../tipos';
-import { criterioDaUnidade } from './entidades';
 
 const LIMITE_PADRAO = 25;
 const LIMITE_MAXIMO = 100;
@@ -21,7 +20,7 @@ export type FiltroChamados = {
   limite?: number;
   ordenarPor?: keyof ChamadoGlpi;
   ordem?: 'ASC' | 'DESC';
-  unidade?: Unidade | null;
+  criterios?: CriterioBusca[];
 };
 
 function normalizar(bruto: ChamadoGlpi): Chamado {
@@ -64,14 +63,14 @@ function normalizarLinha(linha: LinhaBusca): Chamado {
   };
 }
 
-async function listarChamadosDaUnidade(
-  unidade: Unidade,
+async function listarChamadosFiltrados(
+  criterios: CriterioBusca[],
   inicio: number,
   limite: number,
   ordem: 'ASC' | 'DESC',
 ): Promise<PaginaDeChamados> {
   const resultado = await buscarTodos('Ticket', {
-    criterios: criterioDaUnidade(unidade),
+    criterios,
     campos: [
       CAMPO.titulo,
       CAMPO.status,
@@ -101,8 +100,8 @@ export async function listarChamados(
   const inicio = Math.max(0, filtro.inicio ?? 0);
   const limite = Math.min(Math.max(1, filtro.limite ?? LIMITE_PADRAO), LIMITE_MAXIMO);
 
-  if (filtro.unidade) {
-    return listarChamadosDaUnidade(filtro.unidade, inicio, limite, filtro.ordem ?? 'DESC');
+  if (filtro.criterios?.length) {
+    return listarChamadosFiltrados(filtro.criterios, inicio, limite, filtro.ordem ?? 'DESC');
   }
 
   const resposta = await requisitarGlpi<ChamadoGlpi[]>('Ticket', {
@@ -124,7 +123,12 @@ export async function listarChamados(
   };
 }
 
-export async function obterChamado(id: number): Promise<Chamado> {
-  const resposta = await requisitarGlpi<ChamadoGlpi>(`Ticket/${id}`);
+export async function obterChamado(id: number, unidadesPermitidas: Set<number>): Promise<Chamado> {
+  const resposta = await requisitarGlpi<ChamadoGlpi>(`Ticket/${id}`, {
+    parametros: { expand_dropdowns: false },
+  });
+  if (!unidadesPermitidas.has(Number(resposta.dados.entities_id))) {
+    throw new ErroGlpi('Chamado não encontrado.', { status: 404, codigo: 'NAO_ENCONTRADO' });
+  }
   return normalizar(resposta.dados);
 }

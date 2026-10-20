@@ -18,7 +18,7 @@ export function filtrosAplicados(relatorio: RelatorioChamados): [string, string]
   const { painel, unidade } = relatorio;
   return [
     ['Período', descreverIntervalo(painel.inicio, painel.fim, painel.ateHoje)],
-    ['Unidade', unidade ? `${unidade.nome} (inclui subunidades)` : 'Todas as unidades'],
+    ['Unidade', unidade ? unidade.nome : relatorio.restrito ? 'Todas as unidades do usuário' : 'Todas as unidades'],
   ];
 }
 

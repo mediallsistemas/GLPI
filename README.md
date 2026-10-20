@@ -56,8 +56,24 @@ decide se a pessoa pode entrar:
    bloqueio, sem permissões de atribuição de chamado.
 
 O bloqueio é reconferido a cada abertura do painel, então bloquear alguém encerra a
-sessão dela na próxima visita. Os dados do painel continuam vindo da conta de serviço:
-todo mundo que entra vê o mesmo conteúdo.
+sessão dela na próxima visita.
+
+### Separação por unidade
+
+Unidade é a **entidade** do GLPI. Os dados vêm da conta de serviço, mas cada pessoa vê
+só os chamados das unidades em que tem **autorização** no GLPI (perfil + entidade em
+Administração → Usuários → Autorizações, o `Profile_User`):
+
+- autorização **recursiva** libera a unidade e todas as subunidades;
+- autorização **não recursiva** libera só a própria unidade;
+- quem está em `PAINEL_ADMINISTRADORES`, ou tem autorização recursiva na entidade raiz,
+  vê tudo;
+- quem não tem nenhuma autorização entra, mas não vê dados (aviso na tela, 403 na API).
+
+O escopo vale para indicadores, gráficos, chamados recentes, detalhe de chamado (fora do
+escopo responde 404) e exportação. O seletor de unidade lista só as unidades do escopo, e
+um `?unidade=` fora dele é ignorado. As autorizações ficam em cache por 5 minutos e as
+entidades por 10, então uma mudança no GLPI leva até 5 minutos para valer no painel.
 
 ## Endpoints locais
 
@@ -69,10 +85,12 @@ respondem 401, bloqueado 403.
 | `GET /api/glpi/status` | Testa a conexão e devolve a sessão da conta de serviço — só administradores |
 | `GET /api/glpi/painel?dias=30` ou `?de=2026-09-01&ate=2026-09-30` | Indicadores do painel (últimos 7/30/90 dias ou intervalo de até 366 dias) |
 | `GET /api/glpi/chamados?inicio=0&limite=25&ordem=DESC` | Lista chamados |
+| `GET /api/glpi/chamados/:id` | Detalhe de um chamado (404 se for de unidade fora do escopo) |
+| `GET /api/glpi/exportar?formato=xlsx` ou `pdf`, com os mesmos filtros do painel | Resumo e chamados abertos no período |
 
-Painel e chamados aceitam `&unidade=<id>`: o id de uma entidade do GLPI. O filtro inclui
-as subunidades (busca `under` no campo 80); um id desconhecido é ignorado e mostra todas.
-| `GET /api/glpi/chamados/:id` | Detalhe de um chamado |
+Painel, chamados e exportação aceitam `&unidade=<id>`: o id de uma entidade do GLPI dentro
+do escopo de quem pede. O filtro inclui as subunidades autorizadas; um id fora do escopo é
+ignorado. Quem não tem unidade autorizada recebe 403 (`SEM_UNIDADE`).
 
 ## Estrutura
 
@@ -94,7 +112,7 @@ src/
       cliente.ts       fetch autenticado, paginação, erros
       autenticacao.ts  valida usuário e senha de quem entra no painel
       tipos.ts         tipos do GLPI e rótulos em pt-BR
-      recursos/        um arquivo por recurso (chamados, entidades, painel, usuarios, acesso-painel)
+      recursos/        um arquivo por recurso (chamados, entidades, autorizacoes, painel, relatorio, usuarios, acesso-painel)
     http/              helpers de resposta das rotas
 ```
 

@@ -2,6 +2,9 @@ import { cookies } from 'next/headers';
 import { COOKIE_SESSAO, UsuarioSessao, verificarSessao } from '@/lib/autenticacao/sessao-usuario';
 import { ErroGlpi } from '@/lib/glpi/erros';
 import { usuarioBloqueado } from '@/lib/glpi/recursos/acesso-painel';
+import { autorizacoesDoUsuario } from '@/lib/glpi/recursos/autorizacoes';
+import { filtroDeUnidades, FiltroUnidades } from '@/lib/glpi/recursos/entidades';
+import { EscopoUnidades } from '@/lib/glpi/tipos';
 
 export type NivelAcesso = 'administrador' | 'liberado' | 'bloqueado';
 
@@ -47,4 +50,30 @@ export async function exigirAcesso({ somenteAdministrador = false } = {}): Promi
   }
 
   return usuario;
+}
+
+export async function escopoDoUsuario(usuario: { id: number; login: string }): Promise<EscopoUnidades> {
+  if (ehAdministrador(usuario.login)) return { completo: true };
+  return { completo: false, autorizacoes: await autorizacoesDoUsuario(usuario.id) };
+}
+
+export async function filtroDoUsuario(
+  usuario: { id: number; login: string },
+  idUnidade: unknown,
+): Promise<FiltroUnidades> {
+  return filtroDeUnidades(await escopoDoUsuario(usuario), idUnidade);
+}
+
+export async function exigirUnidades(
+  usuario: { id: number; login: string },
+  idUnidade: unknown,
+): Promise<FiltroUnidades> {
+  const filtro = await filtroDoUsuario(usuario, idUnidade);
+  if (filtro.semUnidade) {
+    throw new ErroGlpi('Seu usuário não está vinculado a nenhuma unidade no GLPI.', {
+      status: 403,
+      codigo: 'SEM_UNIDADE',
+    });
+  }
+  return filtro;
 }

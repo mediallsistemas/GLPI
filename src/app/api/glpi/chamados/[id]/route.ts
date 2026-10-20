@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { exigirAcesso } from '@/lib/autenticacao/acesso';
+import { exigirAcesso, exigirUnidades } from '@/lib/autenticacao/acesso';
 import { ErroGlpi, obterChamado } from '@/lib/glpi';
 import { respostaDeErro } from '@/lib/http/resposta';
 
@@ -10,7 +10,7 @@ export async function GET(
   contexto: { params: Promise<{ id: string }> },
 ) {
   try {
-    await exigirAcesso();
+    const usuario = await exigirAcesso();
     const { id } = await contexto.params;
     const identificador = Number(id);
 
@@ -21,7 +21,8 @@ export async function GET(
       });
     }
 
-    return NextResponse.json(await obterChamado(identificador));
+    const { permitidas } = await exigirUnidades(usuario, null);
+    return NextResponse.json(await obterChamado(identificador, permitidas));
   } catch (erro) {
     return respostaDeErro(erro);
   }
