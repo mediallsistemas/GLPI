@@ -15,6 +15,18 @@ function normalizar(bruto: EntidadeGlpi): Unidade {
   };
 }
 
+const SEPARADOR = ' > ';
+
+function semRaizComum(unidades: Unidade[]): Unidade[] {
+  const raizes = new Set(unidades.map((unidade) => unidade.nome.split(SEPARADOR)[0]));
+  if (raizes.size !== 1 || unidades.length < 2) return unidades;
+
+  const prefixo = `${[...raizes][0]}${SEPARADOR}`;
+  return unidades.map((unidade) =>
+    unidade.nome.startsWith(prefixo) ? { ...unidade, nome: unidade.nome.slice(prefixo.length) } : unidade,
+  );
+}
+
 export async function listarUnidades(): Promise<Unidade[]> {
   if (emCache && emCache.expiraEm > Date.now()) return emCache.unidades;
 
@@ -22,9 +34,11 @@ export async function listarUnidades(): Promise<Unidade[]> {
     parametros: { range: `0-${TAMANHO_PAGINA - 1}`, expand_dropdowns: false },
   });
 
-  const unidades = (Array.isArray(resposta.dados) ? resposta.dados : [])
-    .map(normalizar)
-    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
+  const unidades = semRaizComum(
+    (Array.isArray(resposta.dados) ? resposta.dados : [])
+      .map(normalizar)
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })),
+  );
 
   emCache = { unidades, expiraEm: Date.now() + TTL_MS };
   return unidades;
